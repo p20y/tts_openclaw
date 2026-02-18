@@ -1,19 +1,16 @@
 {
   "id": "kokoro-local-tts-plugin",
   "name": "Kokoro Local TTS Plugin",
-  "description": "Local Kokoro TTS for OpenClaw with Apple M4 (MPS) and CPU fallback",
-  "version": "1.0.0",
+  "description": "Local Kokoro TTS for OpenClaw with Apple M4 (MPS) acceleration and CPU fallback",
+  "version": "1.0.1",
+  "main": "./index.js",
   "configSchema": {
     "type": "object",
     "properties": {
       "pythonPath": {
         "type": "string",
-        "description": "Optional path to python executable for Kokoro runtime"
+        "description": "Optional python executable path for Kokoro runtime"
       }
     }
-  },
-  "extension": {
-    "type": "node-js",
-    "main": "index.js"
   }
 }

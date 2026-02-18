@@ -15,6 +15,7 @@ This repository provides a direct OpenClaw plugin (`openclaw.plugin.json` + `ind
 
 - `openclaw.plugin.json`: OpenClaw plugin manifest.
 - `index.js`: OpenClaw Node extension entrypoint (registers tools).
+- `package.json`: ESM metadata + OpenClaw extension mapping.
 - `openclaw_kokoro_plugin/`: Python Kokoro synthesis engine.
 - `pyproject.toml`: Python packaging and CLI script definitions.
 
@@ -42,8 +43,8 @@ python -m openclaw_kokoro_plugin.cli \
 ## OpenClaw integration
 
 1. Point OpenClaw to this plugin folder (contains `openclaw.plugin.json`).
-1. Ensure Python is available to OpenClaw runtime.
-1. If needed, set `OPENCLAW_PYTHON` env var to the desired interpreter path.
+2. Ensure Python is available to OpenClaw runtime.
+3. Optional: set plugin config `pythonPath` (or env var `OPENCLAW_PYTHON`) to a specific interpreter.
 
 ### Tool: `kokoro_tts`
 
@@ -56,4 +57,4 @@ Input schema:
 - `device` (`auto|mps|cuda|cpu`, default: `auto`)
 - `format` (`wav|wav_base64`, default: `wav`)
 
-Returns JSON text containing device info and either `output_path` (wav) or `audio_base64`.
+Returns an object containing device info and either `output_path` (wav) or `audio_base64`.

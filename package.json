@@ -1,0 +1,17 @@
+{
+  "name": "kokoro-local-tts-plugin",
+  "version": "1.0.1",
+  "description": "OpenClaw plugin for local Kokoro TTS",
+  "type": "module",
+  "main": "./index.js",
+  "openclaw": {
+    "extensions": {
+      "openclaw": "./openclaw.plugin.json",
+      "clawdbot": "./openclaw.plugin.json",
+      "moltbot": "./openclaw.plugin.json"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
