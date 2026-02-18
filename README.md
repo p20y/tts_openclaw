@@ -1,25 +1,53 @@
 # Open Claw Kokoro TTS Plugin
 
-This repository provides a direct OpenClaw plugin (`openclaw.plugin.json` + `index.js`) that generates local TTS audio using Kokoro.
+This repository provides a local Kokoro TTS plugin for OpenClaw (`openclaw.plugin.json` + `index.js`) with Apple Silicon GPU preference and CPU fallback.
 
-## Features
+## OpenClaw Integration (Option 1: This Plugin)
 
-- No ElevenLabs dependency.
-- GPU-first device selection: `mps` (Apple M4/Apple Silicon), then `cuda`, then `cpu`.
-- Automatic CPU fallback if GPU init is unavailable/fails.
-- OpenClaw tools:
-  - `kokoro_tts`
-  - `kokoro_voices`
+This plugin name is unchanged: `kokoro-local-tts-plugin`.
 
-## Repository layout
+### Install
 
-- `openclaw.plugin.json`: OpenClaw plugin manifest.
-- `index.js`: OpenClaw Node extension entrypoint (registers tools).
-- `package.json`: ESM metadata + OpenClaw extension mapping.
-- `openclaw_kokoro_plugin/`: Python Kokoro synthesis engine.
-- `pyproject.toml`: Python packaging and CLI script definitions.
+#### Option A - GitHub
 
-## Local setup
+```bash
+openclaw plugins install github:p20y/tts_openclaw
+openclaw gateway restart
+```
+
+Enable in `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "kokoro-local-tts-plugin": { "enabled": true }
+    }
+  }
+}
+```
+
+#### Option B - Local path
+
+Copy this repo into an OpenClaw plugin path (for example `~/.openclaw/extensions/`) or configure `plugins.load.paths`.
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "kokoro-local-tts-plugin": { "enabled": true }
+    },
+    "load": { "paths": ["/path/to/tts_openclaw"] }
+  }
+}
+```
+
+Restart the gateway after config changes.
+
+### Runtime setup
+
+1. Ensure Python is available to OpenClaw runtime.
+2. In this repo, install dependencies:
 
 ```bash
 python3 -m venv .venv
@@ -27,7 +55,27 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-## Test engine directly
+3. Optional: configure plugin `pythonPath` (or env var `OPENCLAW_PYTHON`) to pin interpreter path.
+
+## Features
+
+- No ElevenLabs dependency.
+- GPU-first device selection: `mps` (Apple M4/Apple Silicon), then `cuda`, then `cpu`.
+- Automatic CPU fallback if GPU init is unavailable or fails.
+- OGG/Opus output support for WhatsApp use cases.
+- OpenClaw tools:
+- `kokoro_tts`
+- `kokoro_voices`
+
+## Repository layout
+
+- `openclaw.plugin.json`: OpenClaw plugin manifest.
+- `index.js`: OpenClaw Node extension entrypoint.
+- `package.json`: ESM metadata + OpenClaw extension mapping.
+- `openclaw_kokoro_plugin/`: Python Kokoro synthesis engine.
+- `pyproject.toml`: Python packaging and CLI scripts.
+
+## Local test (engine)
 
 ```bash
 python -m openclaw_kokoro_plugin.cli \
@@ -40,13 +88,7 @@ python -m openclaw_kokoro_plugin.cli \
   --output ./sample.wav
 ```
 
-## OpenClaw integration
-
-1. Point OpenClaw to this plugin folder (contains `openclaw.plugin.json`).
-2. Ensure Python is available to OpenClaw runtime.
-3. Optional: set plugin config `pythonPath` (or env var `OPENCLAW_PYTHON`) to a specific interpreter.
-
-### Tool: `kokoro_tts`
+## Tool: `kokoro_tts`
 
 Input schema:
 
@@ -56,5 +98,6 @@ Input schema:
 - `speed` (default: `1.0`)
 - `device` (`auto|mps|cuda|cpu`, default: `auto`)
 - `format` (`wav|wav_base64`, default: `wav_base64`)
+- `format` (`wav|wav_base64|ogg|ogg_base64`, default: `ogg_base64`)
 
-Returns an object containing device info, `mime_type: "audio/wav"`, and `audio_base64` for reliable playback. If `format=wav`, it also returns `output_path`.
+Returns metadata plus `audio_base64` and `mime_type` (`audio/wav` or `audio/ogg`) for playback. If `format=wav|ogg`, also returns `output_path`.

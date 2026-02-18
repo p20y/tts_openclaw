@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import base64
 import io
+import os
+import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -114,8 +117,47 @@ class OpenClawKokoroTTSPlugin:
             "description": "Local Kokoro text-to-speech plugin with M4/MPS and CPU fallback.",
             "languages": LANGUAGES,
             "voices": VOICES,
-            "supports": ["wav", "wav_base64"],
+            "supports": ["wav", "wav_base64", "ogg", "ogg_base64"],
         }
+
+    @staticmethod
+    def _to_ogg_bytes(audio_np: np.ndarray, sample_rate: int) -> bytes:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_tmp:
+            wav_path = wav_tmp.name
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as ogg_tmp:
+            ogg_path = ogg_tmp.name
+
+        try:
+            sf.write(wav_path, audio_np, sample_rate)
+            proc = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    wav_path,
+                    "-c:a",
+                    "libopus",
+                    "-b:a",
+                    "48k",
+                    ogg_path,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            _ = proc
+            with open(ogg_path, "rb") as f:
+                return f.read()
+        except subprocess.CalledProcessError as exc:
+            err = exc.stderr.decode("utf-8", errors="ignore")
+            raise KokoroPluginError(f"ffmpeg ogg conversion failed: {err}") from exc
+        finally:
+            for p in (wav_path, ogg_path):
+                try:
+                    if os.path.exists(p):
+                        os.remove(p)
+                except OSError:
+                    pass
 
     def _get_pipeline(self, lang_code: str, preferred_device: str) -> tuple[KPipeline, DeviceSelection]:
         if lang_code not in LANGUAGES:
@@ -172,8 +214,8 @@ class OpenClawKokoroTTSPlugin:
 
         audio_np = np.concatenate(chunks)
 
-        if response_format not in {"wav", "wav_base64"}:
-            raise KokoroPluginError("response_format must be one of: wav, wav_base64")
+        if response_format not in {"wav", "wav_base64", "ogg", "ogg_base64"}:
+            raise KokoroPluginError("response_format must be one of: wav, wav_base64, ogg, ogg_base64")
 
         result: Dict[str, object] = {
             "sample_rate": 24000,
@@ -192,15 +234,20 @@ class OpenClawKokoroTTSPlugin:
                 result["audio_base64"] = base64.b64encode(buff.getvalue()).decode("ascii")
             return result
 
+        if response_format == "ogg_base64":
+            ogg_bytes = self._to_ogg_bytes(audio_np, 24000)
+            result["audio_base64"] = base64.b64encode(ogg_bytes).decode("ascii")
+            return result
+
         out = Path(output_path).expanduser().resolve() if output_path else None
         if out is None:
-            raise KokoroPluginError("output_path is required when response_format='wav'")
+            raise KokoroPluginError("output_path is required when response_format is wav or ogg")
 
         out.parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(out), audio_np, 24000)
+        if response_format == "wav":
+            sf.write(str(out), audio_np, 24000)
+        elif response_format == "ogg":
+            ogg_bytes = self._to_ogg_bytes(audio_np, 24000)
+            out.write_bytes(ogg_bytes)
         result["output_path"] = str(out)
         return result
-
-
-# Backward compatibility alias for earlier naming.
-OpenCloKokoroTTSPlugin = OpenClawKokoroTTSPlugin

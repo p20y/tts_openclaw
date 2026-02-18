@@ -17,8 +17,7 @@ dependencies = [
 
 [project.scripts]
 openclaw-kokoro-tts = "openclaw_kokoro_plugin.cli:main"
-openclo-kokoro-tts = "openclo_kokoro_plugin.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["openclaw_kokoro_plugin*", "openclo_kokoro_plugin*"]
+include = ["openclaw_kokoro_plugin*"]

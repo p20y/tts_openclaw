@@ -23,13 +23,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--format",
         dest="response_format",
         default="wav",
-        choices=["wav", "wav_base64"],
+        choices=["wav", "wav_base64", "ogg", "ogg_base64"],
         help="Plugin response format",
     )
     parser.add_argument(
         "--output",
         default="./output.wav",
-        help="Output WAV path (required for --format wav)",
+        help="Output audio path (required for --format wav|ogg)",
     )
     return parser
 
@@ -38,7 +38,7 @@ def main() -> int:
     args = build_parser().parse_args()
     plugin = OpenClawKokoroTTSPlugin(default_lang_code=args.lang, preferred_device=args.device)
 
-    output_path = str(Path(args.output).expanduser()) if args.response_format == "wav" else None
+    output_path = str(Path(args.output).expanduser()) if args.response_format in {"wav", "ogg"} else None
 
     try:
         result = plugin.synthesize(
