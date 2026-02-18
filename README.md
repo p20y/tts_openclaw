@@ -1,25 +1,35 @@
 # Open Claw Kokoro TTS Plugin
 
-Local text-to-speech plugin built on Kokoro, designed for Open Claw plugin execution without FastAPI.
+This repository provides a direct OpenClaw plugin (`openclaw.plugin.json` + `index.js`) that generates local TTS audio using Kokoro.
 
-## What this provides
+## Features
 
-- `openclaw_kokoro_plugin` package with an in-process plugin class.
-- CLI adapter for plugin runtimes that execute shell commands.
-- Automatic device selection: `mps` (Apple Silicon/M4) -> `cuda` -> `cpu`.
-- Safe fallback to CPU if GPU init fails.
-- Backward-compatible `openclo_*` module/script aliases.
+- No ElevenLabs dependency.
+- GPU-first device selection: `mps` (Apple M4/Apple Silicon), then `cuda`, then `cpu`.
+- Automatic CPU fallback if GPU init is unavailable/fails.
+- OpenClaw tools:
+  - `kokoro_tts`
+  - `kokoro_voices`
 
-## Install
+## Repository layout
+
+- `openclaw.plugin.json`: OpenClaw plugin manifest.
+- `index.js`: OpenClaw Node extension entrypoint (registers tools).
+- `openclaw_kokoro_plugin/`: Python Kokoro synthesis engine.
+- `pyproject.toml`: Python packaging and CLI script definitions.
+
+## Local setup
 
 ```bash
-.venv/bin/pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-## CLI usage
+## Test engine directly
 
 ```bash
-openclaw-kokoro-tts \
+python -m openclaw_kokoro_plugin.cli \
   --text "Hello from Kokoro" \
   --voice af_heart \
   --lang a \
@@ -29,38 +39,21 @@ openclaw-kokoro-tts \
   --output ./sample.wav
 ```
 
-The command prints JSON:
+## OpenClaw integration
 
-- `ok=true` with `device_used`, `used_fallback`, `output_path`, etc.
-- `ok=false` with an error string.
+1. Point OpenClaw to this plugin folder (contains `openclaw.plugin.json`).
+1. Ensure Python is available to OpenClaw runtime.
+1. If needed, set `OPENCLAW_PYTHON` env var to the desired interpreter path.
 
-For inline payloads:
+### Tool: `kokoro_tts`
 
-```bash
-openclaw-kokoro-tts --text "Hello" --format wav_base64
-```
+Input schema:
 
-## Open Claw plugin registration
+- `text` (required)
+- `voice` (default: `af_heart`)
+- `lang` (`a` or `b`)
+- `speed` (default: `1.0`)
+- `device` (`auto|mps|cuda|cpu`, default: `auto`)
+- `format` (`wav|wav_base64`, default: `wav`)
 
-Use `/Users/pradeepsrini/projects/tts/openclaw_plugin.json` as the starter manifest.
-
-Entrypoint:
-
-- `python -m openclaw_kokoro_plugin.cli`
-
-## In-process usage
-
-```python
-from openclaw_kokoro_plugin import OpenClawKokoroTTSPlugin
-
-plugin = OpenClawKokoroTTSPlugin(preferred_device="auto")
-result = plugin.synthesize(
-    text="This is a local Kokoro voice.",
-    voice="af_heart",
-    lang_code="a",
-    speed=1.0,
-    output_path="./voice.wav",
-    response_format="wav",
-)
-print(result)
-```
+Returns JSON text containing device info and either `output_path` (wav) or `audio_base64`.
