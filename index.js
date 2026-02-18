@@ -107,7 +107,7 @@ export default {
         const text = `${args.text || ""}`.trim();
         if (!text) throw new Error("'text' is required");
 
-        const responseFormat = args.format || "wav";
+        const responseFormat = args.format || "wav_base64";
         const outputPath = path.join(
           os.tmpdir(),
           `kokoro-${Date.now()}-${Math.random().toString(36).slice(2)}.wav`
@@ -125,6 +125,11 @@ export default {
         if (responseFormat === "wav") cliArgs.push("--output", outputPath);
 
         const result = runKokoro(cliArgs, pluginRoot, configuredPython);
+        let audioBase64 = result.audio_base64;
+        if (!audioBase64 && result.output_path && fs.existsSync(result.output_path)) {
+          audioBase64 = fs.readFileSync(result.output_path).toString("base64");
+        }
+
         return {
           provider: "kokoro",
           device_used: result.device_used,
@@ -135,7 +140,8 @@ export default {
           speed: result.speed,
           response_format: result.response_format,
           output_path: result.output_path,
-          audio_base64: result.audio_base64,
+          audio_base64: audioBase64,
+          mime_type: "audio/wav",
         };
       },
     });

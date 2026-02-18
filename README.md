@@ -55,6 +55,6 @@ Input schema:
 - `lang` (`a` or `b`)
 - `speed` (default: `1.0`)
 - `device` (`auto|mps|cuda|cpu`, default: `auto`)
-- `format` (`wav|wav_base64`, default: `wav`)
+- `format` (`wav|wav_base64`, default: `wav_base64`)
 
-Returns an object containing device info and either `output_path` (wav) or `audio_base64`.
+Returns an object containing device info, `mime_type: "audio/wav"`, and `audio_base64` for reliable playback. If `format=wav`, it also returns `output_path`.
