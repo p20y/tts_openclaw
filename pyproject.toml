@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openclaw-kokoro-plugin"
+version = "0.1.0"
+description = "Open Claw-compatible Kokoro TTS plugin with GPU fallback"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "kokoro>=0.9.4",
+  "soundfile>=0.12.1",
+  "numpy>=1.26",
+  "torch>=2.2"
+]
+
+[project.scripts]
+openclaw-kokoro-tts = "openclaw_kokoro_plugin.cli:main"
+openclo-kokoro-tts = "openclo_kokoro_plugin.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["openclaw_kokoro_plugin*", "openclo_kokoro_plugin*"]
